@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+data_brutes/
+data_finales/*.gpkg
+data_finales/*.csv
