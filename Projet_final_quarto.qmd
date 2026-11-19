@@ -1,6 +1,6 @@
 ---
 title: "Projet économie géographique et urbaine"
-format: pdf
+format: html
 editor: visual
 ---
 
@@ -39,7 +39,7 @@ stations <- read.csv2(path_stations, row.names = NULL)
 # 1. PRÉPARATION ET NETTOYAGE DES DONNÉES (DVF+)
 
 ```{r}
-vf_bordeaux <- dvf_brut |>
+dvf_bordeaux <- dvf_brut |>
   mutate(codinsee = as.character(l_codinsee)) |>
   filter(
     codinsee %in% c("33063", "33069", "33075", "33162"), # Bordeaux, Le Bouscat, Bruges, Eysines
@@ -368,5 +368,18 @@ ggplot(tendances_300, aes(x = annee, y = prix_moyen,
     color = "Groupe"
   ) +
   theme_minimal()
+
+modele_es_300 <- feols(
+  log(prix_m2) ~ traite + i(annee, traite, ref = 2018) + 
+    log(surface) + nb_pieces_total + maison + asinh(surf_terrain) | quartier + annee^mois, 
+  data = base_300, 
+  vcov = ~quartier
+)
+
+iplot(modele_es_300,
+      main = "Event Study (< 300 m vs > 1 000 m, Réf. : 2018)",
+      xlab = "Année",
+      ylab = "Coefficient estimé (Log Prix/m²)")
+abline(v = 2019.5, lty = 2, col = "red")
 
 ```
