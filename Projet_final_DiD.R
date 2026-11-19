@@ -91,6 +91,40 @@ stations_ligne_d <- stations_tram |>
 matrice_dist <- st_distance(dvf_points, stations_ligne_d)
 dvf_points$dist_ligne_d <- apply(matrice_dist, 1, min)
 
+# ----------------------------------------------------------------
+# 2. bis. Stats desc
+# ----------------------------------------------------------------
+
+# On enlève la géométrie pour travailler sur un simple tableau
+desc <- dvf_points |> st_drop_geometry()
+desc$dist_ligne_d <- as.numeric(desc$dist_ligne_d)
+
+# Nombre d'observations
+nrow(desc)
+
+# Résumé des variables principales
+summary(desc[, c("prix_m2", "surface", "nb_pieces_total", "maison", "surf_terrain", "dist_ligne_d")])
+
+# Distribution du prix au m² (valeurs aberrantes ?)
+boxplot(desc$prix_m2, main = "Prix au m²", ylab = "€/m²")
+hist(desc$prix_m2, breaks = 50, main = "Distribution du prix au m²", xlab = "€/m²")
+
+# Nombre de ventes par année (il faut des ventes avant 2019)
+table(desc$annee)
+
+# Nombre de ventes par commune
+table(desc$codinsee)
+
+# Part de maisons / appartements
+table(desc$maison)
+
+# Distribution de la distance à la station la plus proche
+hist(desc$dist_ligne_d, breaks = 50, main = "Distance à la station la plus proche", xlab = "mètres")
+
+# Combien de logements dans chaque zone (avant de définir les groupes)
+table(cut(desc$dist_ligne_d, breaks = c(0, 500, 1000, Inf),
+          labels = c("< 500 m (traité)", "500-1000 m (exclu)", "> 1000 m (contrôle)"),
+          right = FALSE))
 
 # ------------------------------------------------------------------------------
 # 3. CARTES INTERACTIVES (`mapview`, style TD)
