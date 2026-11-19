@@ -106,8 +106,8 @@ nrow(desc)
 summary(desc[, c("prix_m2", "surface", "nb_pieces_total", "maison", "surf_terrain", "dist_ligne_d")])
 
 # Distribution du prix au m² (valeurs aberrantes ?)
-boxplot(desc$prix_m2, main = "Prix au m²", ylab = "€/m²")
-hist(desc$prix_m2, breaks = 50, main = "Distribution du prix au m²", xlab = "€/m²")
+boxplot(desc$prix_m2, main = "Prix au m2", ylab = "euros/m2")
+hist(desc$prix_m2, breaks = 50, main = "Distribution du prix au m2", xlab = "euros/m2")
 
 # Nombre de ventes par année (il faut des ventes avant 2019)
 table(desc$annee)
