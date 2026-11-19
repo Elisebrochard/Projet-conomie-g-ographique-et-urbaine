@@ -3,11 +3,13 @@ title: "Projet économie géographique et urbaine"
 format: pdf
 editor: visual
 ---
+
 # PROJET D'ÉCONOMIE GÉOGRAPHIQUE ET URBAINE APPLIQUÉE
 
 # Impact de la Ligne D du tramway bordelais sur les prix immobiliers
 
 ## Chargement des packages
+
 ```{r}
 library(dplyr)
 library(tidyr) 
@@ -19,8 +21,8 @@ library(stringi)
 library(geodata) 
 library(mapview) 
 library(ggspatial)
+library(maptiles)
 ```
-
 
 # 0. CHARGEMENT DES DONNÉES (VERSION GEOPACKAGE .gpkg)
 
@@ -33,8 +35,6 @@ path_stations <- "sv_arret_p.csv"
 dvf_brut <- st_read(path_dvf)
 stations <- read.csv2(path_stations, row.names = NULL)
 ```
-
-
 
 # 1. PRÉPARATION ET NETTOYAGE DES DONNÉES (DVF+)
 
@@ -98,7 +98,6 @@ matrice_dist <- st_distance(dvf_points, stations_ligne_d)
 dvf_points$dist_ligne_d <- apply(matrice_dist, 1, min)
 ```
 
-
 # 2. bis. Stats desc
 
 ```{r}
@@ -134,48 +133,102 @@ table(cut(desc$dist_ligne_d, breaks = c(0, 500, 1000, Inf),
           right = FALSE))
 ```
 
+Moyenne du prix de vente avant / après : 
+```{r}
+dvf_points |> 
+  st_drop_geometry() |> 
+  mutate(datemut = as.Date(datemut)) |> 
+  filter(datemut < as.Date("2019-12-14") | datemut > as.Date("2020-02-29")) |> 
+  group_by(apres = datemut > as.Date("2020-02-29")) |> 
+  summarise(n = n(), prix_moyen = mean(prix))
+```
 
-# 3. CARTES INTERACTIVES (`mapview`, style TD)
+# 3. CARTE INTERACTIVE (`mapview`)
 
 ```{r}
-carte_data_2023 <- dvf_points |>
-  filter(annee == 2023, !is.na(dist_ligne_d)) |>
+# Groupes : traité < 500 m, contrôle > 1000 m (zone tampon exclue)
+carte_data <- dvf_points |>
+  filter(!is.na(dist_ligne_d), !st_is_empty(geom)) |>
   filter(dist_ligne_d < 500 | dist_ligne_d > 1000) |>
   mutate(groupe = ifelse(dist_ligne_d < 500, "Traité (< 500m)", "Contrôle (> 1000m)"))
 
-# S'ouvre dans l'onglet Viewer de RStudio
-mapview(carte_data_2023, zcol = "groupe", col.regions = c("grey60", "red"), 
-        cex = 3, layer.name = "Groupe DiD", map.types = "OpenStreetMap") +
+# Un point par logement à la place des parcelles
+carte_pts <- st_sf(groupe = carte_data$groupe,
+                   geometry = st_point_on_surface(st_geometry(carte_data)))
+
+# Ordre aléatoire : un groupe ne recouvre plus l'autre
+set.seed(1)
+carte_pts <- carte_pts[sample(nrow(carte_pts)), ]
+
+# Carte
+mapview(carte_pts, zcol = "groupe", col.regions = c("grey55", "#8B1E2D"),
+        cex = 1.2, alpha.regions = 0.35, lwd = 0,
+        layer.name = "Groupe DiD", map.types = "Esri.WorldGrayCanvas") +
   mapview(stations_ligne_d, col.regions = "black", cex = 5, layer.name = "Stations Ligne D")
-
-
 ```
 
+Cette carte sert à illustrer notre raisonnement sur le premier modèle que l'on va estimer. Ici le groupe traité (en bordeaux) regroupe tous les logements à moins de 500m de la ligne de tram D, le groupe contrôle (en gris) regroupe tous les logements à plus de 1000m de la ligne de tram D. 
 
-# 4. CARTES STATIQUES QUALITATIVES (`ggplot2` + Fond OpenStreetMap)
+Elle représente la localisation des logements qui sont dans le groupe traité et ceux qui sont dans le groupe contrôle. Pour une question de lisibilité seulement 1/3 (choisi aléatoirement : set.seed(1)) des logements du groupe traité sont représenté sur cette carte.
+
+# 4. CARTES STATIQUES QUALITATIVES (`ggplot2`)
 
 ```{r}
+# Un point par logement
+# Détermination des périodes avant / après ouverture de la ligne
+pts <- dvf_points |>
+  filter(!st_is_empty(geom)) |>
+  mutate(datemut = as.Date(datemut)) |>
+  filter(datemut < as.Date("2019-12-14") | datemut > as.Date("2020-02-29")) |>   # même exclusion de la transition que dans le DiD
+  mutate(periode = factor(ifelse(datemut < as.Date("2019-12-14"),
+                                 "Avant la ligne D (jusqu'en 2019)",
+                                 "Après la ligne D (depuis 2020)"),
+                          levels = c("Avant la ligne D (jusqu'en 2019)",
+                                     "Après la ligne D (depuis 2020)")))
+
+pts <- st_sf(prix_m2 = pts$prix_m2, periode = pts$periode,
+             geometry = st_point_on_surface(st_geometry(pts)))
+
+# Ordre aléatoire pour ne pas masquer les logements les moins chers
+set.seed(1)
+pts <- pts[sample(nrow(pts)), ]
+
+# Fond gris pour que ca soit lisible
+fond <- get_tiles(pts, provider = "Esri.WorldGrayCanvas", zoom = 13, crop = TRUE)
+
 carte_prix_osm <- ggplot() +
-  annotation_map_tile(type = "osm", zoom = 12) +
-  geom_sf(data = carte_data_2023, aes(color = prix_m2), size = 0.9, alpha = 0.8) +
+  layer_spatial(fond) +
+  geom_sf(data = pts, aes(color = prix_m2), size = 0.6, alpha = 0.6) +
   geom_sf(data = stations_ligne_d, color = "black", shape = 17, size = 2.5) +
-  scale_color_viridis_c(
-    option = "magma",
-    direction = -1,
+  facet_wrap(~ periode) +
+  scale_color_gradientn(
+    colours = c("#FFF1C9", "#F4B860", "#E07B39", "#B23A2E", "#6B0F1A"),
+    limits = quantile(pts$prix_m2, c(0.05, 0.95)), oob = squish,
     name = "Prix au m² (€)",
     labels = label_number(big.mark = " ", suffix = " €")
   ) +
   coord_sf(datum = NA) +
   labs(
-    title = "Distribution spatiale des prix au m² autour de la Ligne D (2023)",
-    subtitle = "Bordeaux, Le Bouscat, Bruges et Eysines",
-    caption = "Sources : DVF+ (Cerema), Open Data Bordeaux Métropole, OpenStreetMap."
+    title = "Prix au m2 autour de la Ligne D, avant et après son ouverture",
+    subtitle = "Bordeaux, Le Bouscat, Bruges et Eysines | Triangles : stations de la ligne D",
+    caption = "Sources : DVF+ (Cerema), Open Data Bordeaux Métropole, Esri."
   ) +
-  theme_void()
+  theme_void() +
+  theme(strip.text = element_text(face = "bold", size = 11))
 
 print(carte_prix_osm)
 ```
 
+Ces deux cartes montrent le prix des logements avant et après l'ouverture de la ligne de tram D peu importe le groupe (traité ou contrôle) et peu importe l'année de vente. 
+
+Ces deux cartes servent à appuyer l'analyse descriptive. Elles illustrent une tendance à la hausse des prix des logements comme vu lors de l'analyse descriptive (prix moyen plus élevé après l'ouverture de la ligne). En effet, on peut voir plus de points foncés sur la 2e carte (après ouverture de la ligne).  
+
+Cependant, cette augmentation des prix n'est pas forcément liée à l'ouverture de la ligne. Cela peut être due à :
+- l'inflation
+- attractivité de la ville de Bordeaux après covid
+- d'autres projets urbains indépendant de la ligne de tram D
+
+D'où l’intérêt de faire un modèle de différence en différence.
 
 # 5. ANALYSE ÉCONOMÉTRIQUE (DOUBLE DIFFÉRENCE)
 
@@ -259,9 +312,6 @@ etable(
 
 ```
 
-
-
-
 # 6. TENDANCES PARALLÈLES ET EVENT STUDY
 
 ```{r}
@@ -320,4 +370,3 @@ ggplot(tendances_300, aes(x = annee, y = prix_moyen,
   theme_minimal()
 
 ```
-
