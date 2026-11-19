@@ -13,6 +13,7 @@ library(stringi)
 library(geodata)
 library(mapview)
 library(ggspatial)
+library(maptiles)
 
 # ------------------------------------------------------------------------------
 # 0. CHARGEMENT DES DONNÉES (VERSION GEOPACKAGE .gpkg)
@@ -144,7 +145,7 @@ mapview(carte_data_2023, zcol = "groupe", col.regions = c("grey60", "red"),
 # ------------------------------------------------------------------------------
 # 4. CARTES STATIQUES QUALITATIVES (`ggplot2` + Fond OpenStreetMap)
 # ------------------------------------------------------------------------------
-### NE FONCTIONNE PAS 
+
 carte_prix_osm <- ggplot() +
   annotation_map_tile(type = "osm", zoom = 12) +
   geom_sf(data = carte_data_2023, aes(color = prix_m2), size = 0.9, alpha = 0.8) +
@@ -165,6 +166,51 @@ carte_prix_osm <- ggplot() +
 
 print(carte_prix_osm)
 
+#############
+# 2 cartes : avant - après
+
+# Tous les logements des 4 communes, sans filtre de distance ni d'année
+pts <- dvf_points |>
+  filter(!st_is_empty(geom)) |>
+  mutate(datemut = as.Date(datemut)) |>
+  filter(datemut < as.Date("2019-12-14") | datemut > as.Date("2020-02-29")) |>   # même exclusion de la transition que dans le DiD
+  mutate(periode = factor(ifelse(datemut < as.Date("2019-12-14"),
+                                 "Avant la ligne D (jusqu'en 2019)",
+                                 "Après la ligne D (depuis 2020)"),
+                          levels = c("Avant la ligne D (jusqu'en 2019)",
+                                     "Après la ligne D (depuis 2020)")))
+
+pts <- st_sf(prix_m2 = pts$prix_m2, periode = pts$periode,
+             geometry = st_point_on_surface(st_geometry(pts)))
+
+# Ordre aléatoire pour ne pas masquer les logements les moins chers
+set.seed(1)
+pts <- pts[sample(nrow(pts)), ]
+
+fond <- get_tiles(pts, provider = "Esri.WorldGrayCanvas", zoom = 13, crop = TRUE)
+
+carte_prix_osm <- ggplot() +
+  layer_spatial(fond) +
+  geom_sf(data = pts, aes(color = prix_m2), size = 0.6, alpha = 0.6) +
+  geom_sf(data = stations_ligne_d, color = "black", shape = 17, size = 2.5) +
+  facet_wrap(~ periode) +
+  scale_color_gradientn(
+    colours = c("#FFF1C9", "#F4B860", "#E07B39", "#B23A2E", "#6B0F1A"),
+    limits = quantile(pts$prix_m2, c(0.05, 0.95)), oob = squish,
+    name = "Prix au m² (€)",
+    labels = label_number(big.mark = " ", suffix = " €")
+  ) +
+  coord_sf(datum = NA) +
+  labs(
+    title = "Prix au m² autour de la Ligne D, avant et après son ouverture",
+    subtitle = "Bordeaux, Le Bouscat, Bruges et Eysines | Triangles : stations de la ligne D",
+    caption = "Sources : DVF+ (Cerema), Open Data Bordeaux Métropole, Esri."
+  ) +
+  theme_void() +
+  theme(strip.text = element_text(face = "bold", size = 11))
+
+print(carte_prix_osm)
+##########
 
 # ------------------------------------------------------------------------------
 # 5. ANALYSE ÉCONOMÉTRIQUE (DOUBLE DIFFÉRENCE)
