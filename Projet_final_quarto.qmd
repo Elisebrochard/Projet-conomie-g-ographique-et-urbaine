@@ -8,7 +8,18 @@ editor: visual
 
 # Impact de la Ligne D du tramway bordelais sur les prix immobiliers
 
-## Chargement des packages
+Pour ce projet en économie géographique et urbaine, nous avons choisi d'étudier l'impact de la création d'une ligne de transports en commun sur les prix de l'immobilier.
+
+Afin de mener ce projet, nous avons décidé de nous pencher sur le cas de la ville de Bordeaux, dans laquelle une nouvelle ligne de tram a été mise en service à la fin de l'année 2019. L'idée générale est de comparer les prix de vente des logements dans les communes traversées par cette ligne de tramway. Pour cela, nous allons utiliser la méthode de différence en différence en séparant un groupe traité et un groupe de contrôle, le groupe traité étant le groupe des logements les plus proches du tram.
+La ligne traverse quatre communes qui font donc parti de notre analyse : Bordeaux, Le Bouscat, Bruges, Eysines.
+
+Avant de lancer l'étude économétrique, on peut s'interroger sur les effets attendus.
+
+Dans un premier temps, la mise en service d'une nouvelle ligne de tram permet de rendre les déplacements plus accessibles jusqu'au centre-ville. On s'attend à ce que cette accessibilité entraîne une augmentation des prix aux alentours proches de la ligne. Cependant, on peut également s'attendre à des externalités négatives : en effet, une proximité directe au tram peut se traduire par des nuisances sonores principalement (bruit, travaux, circulation).
+
+Malgré tout, l'hypothèse reste tout de même une hausse des prix au mètre carré dans le secteur proche du tram. 
+
+# Chargement des packages
 
 ```{r}
 library(dplyr)
@@ -25,6 +36,10 @@ library(maptiles)
 ```
 
 # 0. CHARGEMENT DES DONNÉES (VERSION GEOPACKAGE .gpkg)
+
+Les données des valeurs foncières proviennent de DVF+, elles contiennent les informations suivantes : ransactions immobilières géoréférencées, prix, surface, pièces, type de bien, terrain.
+
+Les données sur les arrêts du tram proviennent elles de Open Data Bordeaux Métropole. Elles contiennent notamment les stations de tram géolocalisées.
 
 ```{r}
 # chemin des données
@@ -55,7 +70,7 @@ dvf_bordeaux <- dvf_brut |>
   mutate(
     appartement = ifelse(nblocapt > 0, 1, 0),
     maison = ifelse(nblocmai > 0, 1, 0),
-    # Reconstruction des pièces (méthode TD)[cite: 5]
+    # Reconstruction des pièces 
     nb_pieces_appart = 1 * nbapt1pp + 2 * nbapt2pp + 3 * nbapt3pp + 4 * nbapt4pp + 5 * nbapt5pp,
     nb_pieces_maison = 1 * nbmai1pp + 2 * nbmai2pp + 3 * nbmai3pp + 4 * nbmai4pp + 5 * nbmai5pp,
     nb_pieces_total = nb_pieces_appart + nb_pieces_maison,
@@ -69,10 +84,12 @@ dvf_bordeaux <- dvf_brut |>
   ) |>
   filter(is.finite(prix_m2), prix_m2 > 500, prix_m2 < 15000)
 
-# Point représentatif dans la parcelle (st_point_on_surface du TD)[cite: 5, 8]
+# Point représentatif dans la parcelle 
 dvf_points <- dvf_bordeaux |>
   mutate(geometry = st_point_on_surface(geom))
 ```
+
+Nettoyage des données pour ne garder que les variables nécessaires à l'analyse. 
 
 # 2. VARIABLE SPATIALE : DISTANCE À LA LIGNE D
 
@@ -98,7 +115,10 @@ matrice_dist <- st_distance(dvf_points, stations_ligne_d)
 dvf_points$dist_ligne_d <- apply(matrice_dist, 1, min)
 ```
 
-# 2. bis. Stats desc
+Création de la variable de distances. Elle calcule la distance entre les logements et les arrêts de tram. 
+Le dataframe stations_ligne_d contient uniquement les arrêts qui sont sur la ligne D, c'est sur cette partie de la ligne que se penchera notre analyse. Nous excluons la partie commune avec la ligne C qui existe depuis 2004. 
+
+# 2.bis. STATISTIQUES DESCRIPTIVES
 
 ```{r}
 # On enlève la géométrie pour travailler sur un simple tableau
@@ -115,7 +135,7 @@ summary(desc[, c("prix_m2", "surface", "nb_pieces_total", "maison", "surf_terrai
 boxplot(desc$prix_m2, main = "Prix au m2", ylab = "euros/m2", col = "red4")
 hist(desc$prix_m2, breaks = 50, main = "Distribution du prix au m2", xlab = "euros/m2", col = "red4")
 
-# Nombre de ventes par année (il faut des ventes avant 2019)
+# Nombre de ventes par année
 table(desc$annee)
 
 # Nombre de ventes par commune
@@ -127,7 +147,7 @@ table(desc$maison)
 # Distribution de la distance à la station la plus proche
 hist(desc$dist_ligne_d, breaks = 50, main = "Distance à la station la plus proche", xlab = "mètres", col = "brown")
 
-# Combien de logements dans chaque zone (avant de définir les groupes)
+# Combien de logements dans chaque zone
 table(cut(desc$dist_ligne_d, breaks = c(0, 500, 1000, Inf),
           labels = c("< 500 m (traité)", "500-1000 m (exclu)", "> 1000 m (contrôle)"),
           right = FALSE))
