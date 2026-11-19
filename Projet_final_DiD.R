@@ -107,8 +107,8 @@ nrow(desc)
 summary(desc[, c("prix_m2", "surface", "nb_pieces_total", "maison", "surf_terrain", "dist_ligne_d")])
 
 # Distribution du prix au m² (valeurs aberrantes ?)
-boxplot(desc$prix_m2, main = "Prix au m2", ylab = "euros/m2")
-hist(desc$prix_m2, breaks = 50, main = "Distribution du prix au m2", xlab = "euros/m2")
+boxplot(desc$prix_m2, main = "Prix au m2", ylab = "euros/m2", col = "red4")
+hist(desc$prix_m2, breaks = 50, main = "Distribution du prix au m2", xlab = "euros/m2", col = "red4")
 
 # Nombre de ventes par année (il faut des ventes avant 2019)
 table(desc$annee)
@@ -120,7 +120,7 @@ table(desc$codinsee)
 table(desc$maison)
 
 # Distribution de la distance à la station la plus proche
-hist(desc$dist_ligne_d, breaks = 50, main = "Distance à la station la plus proche", xlab = "mètres")
+hist(desc$dist_ligne_d, breaks = 50, main = "Distance à la station la plus proche", xlab = "mètres", col = "brown")
 
 # Combien de logements dans chaque zone (avant de définir les groupes)
 table(cut(desc$dist_ligne_d, breaks = c(0, 500, 1000, Inf),
@@ -240,6 +240,92 @@ etable(m3, digits = 3,
                 "asinh(surf_terrain)" = "asinh(Terrain)"))
 
 
+#----------------------------------------------------------------------------
+# 1. Création de la base complète (sans filtre sur dist_ligne_d)
+base_complete <- dvf_points |>
+  st_drop_geometry() |>
+  filter(!is.na(dist_ligne_d), !is.na(nb_pieces_total)) |>
+  mutate(
+    datemut = as.Date(datemut),
+    dist_ligne_d = as.numeric(dist_ligne_d),
+    post = ifelse(datemut > as.Date("2020-02-29"), 1, 0)
+  ) |>
+  filter(datemut < as.Date("2019-12-14") | datemut > as.Date("2020-02-29"))
+
+# 2. Préparation des bases avec différents seuils
+# Modèle de référence (< 500m vs > 1000m)
+base_500 <- base_complete |> 
+  filter(dist_ligne_d < 500 | dist_ligne_d > 1000) |> 
+  mutate(traite = ifelse(dist_ligne_d < 500, 1, 0))
+
+# Test de robustesse 1 : Proximité immédiate (< 300m vs > 1000m)
+base_300 <- base_complete |> 
+  filter(dist_ligne_d < 300 | dist_ligne_d > 1000) |> 
+  mutate(traite = ifelse(dist_ligne_d < 300, 1, 0))
+
+# Test de robustesse 2 : Périmètre élargi (< 750m vs > 1000m)
+base_750 <- base_complete |> 
+  filter(dist_ligne_d < 750 | dist_ligne_d > 1000) |> 
+  mutate(traite = ifelse(dist_ligne_d < 750, 1, 0))
+
+# 3. Estimation des modèles DiD binaires
+m_ref_500 <- feols(
+  log(prix_m2) ~ traite + traite:post + log(surface) + nb_pieces_total + maison + asinh(surf_terrain) | 
+    quartier + annee^mois,
+  data = base_500,
+  vcov = ~quartier
+)
+
+m_rob_300 <- feols(
+  log(prix_m2) ~ traite + traite:post + log(surface) + nb_pieces_total + maison + asinh(surf_terrain) | 
+    quartier + annee^mois,
+  data = base_300,
+  vcov = ~quartier
+)
+
+m_rob_750 <- feols(
+  log(prix_m2) ~ traite + traite:post + log(surface) + nb_pieces_total + maison + asinh(surf_terrain) | 
+    quartier + annee^mois,
+  data = base_750,
+  vcov = ~quartier
+)
+
+# 4. Estimation du modèle continu (sur TOUTE la base, sans zone tampon)
+m_continu <- feols(
+  log(prix_m2) ~ log(dist_ligne_d + 1) + post:log(dist_ligne_d + 1) + 
+    log(surface) + nb_pieces_total + maison + asinh(surf_terrain) | 
+    quartier + annee^mois,
+  data = base_complete,
+  vcov = ~quartier
+)
+
+# 5. Affichage comparatif propre de tous les modèles
+etable(
+  list("Ref (<500m)" = m_ref_500, 
+       "Proche (<300m)" = m_rob_300, 
+       "Élargi (<750m)" = m_rob_750, 
+       "Continu (Log Dist)" = m_continu),
+  dict = c(
+    "traite:post" = "Effet Tram (DiD Binaire)",
+    "log(dist_ligne_d + 1)" = "Log(Distance)",
+    "post:log(dist_ligne_d + 1)" = "Effet Tram (DiD Continu)",
+    "log(surface)" = "Log(Surface)",
+    "nb_pieces_total" = "Nombre de pièces",
+    "maison" = "Maison",
+    "asinh(surf_terrain)" = "asinh(Terrain)"
+  ),
+  se.below = TRUE,
+  fitstat = ~ n + r2 + wr2
+)
+
+#-------------------------------------------------------------------------------
+
+
+
+
+
+
+
 # ------------------------------------------------------------------------------
 # 6. TENDANCES PARALLÈLES ET EVENT STUDY
 # ------------------------------------------------------------------------------
@@ -275,3 +361,24 @@ iplot(modele_es,
       xlab = "Année",
       ylab = "Coefficient estimé (Log Prix/m²)")
 abline(v = 2019.5, lty = 2, col = "red")
+
+
+
+# Vérification rapide des tendances parallèles pour < 300 m
+tendances_300 <- base_300 |>
+  group_by(annee, traite) |>
+  summarise(prix_moyen = mean(prix_m2, na.rm = TRUE), .groups = "drop")
+
+ggplot(tendances_300, aes(x = annee, y = prix_moyen,
+                          color = factor(traite, labels = c("Contrôle (> 1 000 m)", "Traité (< 300 m)")))) +
+  geom_line(linewidth = 1.1) +
+  geom_point(size = 2.5) +
+  geom_vline(xintercept = 2019.9, linetype = "dashed", color = "grey30") +
+  scale_y_continuous(labels = label_number(big.mark = " ", suffix = " €")) +
+  labs(
+    title = "Tendances parallèles : Traité (< 300 m) vs Contrôle (> 1 000 m)",
+    x = "Année de transaction",
+    y = "Prix moyen au m² (€)",
+    color = "Groupe"
+  ) +
+  theme_minimal()
