@@ -10,11 +10,11 @@ editor: visual
 
 Pour ce projet en économie géographique et urbaine, nous avons choisi d'étudier l'impact de la création d'une ligne de transports en commun sur les prix de l'immobilier.
 
-Afin de mener ce projet, nous avons décidé de nous pencher sur le cas de la ville de Bordeaux, dans laquelle une nouvelle ligne de tram a été mise en service à la fin de l'année 2019. L'idée générale est de comparer les prix de vente des logements dans les communes traversées par cette ligne de tramway. Pour cela, nous allons utiliser la méthode de différence en différence en séparant un groupe traité et un groupe de contrôle, le groupe traité étant le groupe des logements les plus proches du tram. La ligne traverse quatre communes qui font donc parti de notre analyse : Bordeaux, Le Bouscat, Bruges, Eysines.
+Afin de mener ce projet, nous avons décidé de nous pencher sur le cas de la ville de Bordeaux, dans laquelle une nouvelle ligne de tram a été mise en service à la fin de l'année 2019. L'idée générale est de comparer les prix de vente des logements dans les communes traversées par cette ligne de tramway. Pour cela, nous allons utiliser la méthode de différence en différence en séparant un groupe traité et un groupe de contrôle, le groupe traité étant le groupe des logements les plus proches du tram. La ligne traverse quatre communes qui font donc partie de notre analyse : Bordeaux, Le Bouscat, Bruges, Eysines.
 
 Avant de lancer l'étude économétrique, on peut s'interroger sur les effets attendus.
 
-Dans un premier temps, la mise en service d'une nouvelle ligne de tram permet de rendre les déplacements plus accessibles jusqu'au centre-ville. On s'attend à ce que cette accessibilité entraîne une augmentation des prix aux alentours proches de la ligne. Cependant, on peut également s'attendre à des externalités négatives : en effet, une proximité directe au tram peut se traduire par des nuisances sonores principalement (bruit, travaux, circulation).
+Dans un premier temps, la mise en service d'une nouvelle ligne de tram permet de rendre les déplacements plus accessibles jusqu'au centre-ville. On s'attend à ce que cette accessibilité entraîne une augmentation des prix aux alentours proches de la ligne. Cependant, on peut également s'attendre à des externalités négatives : en effet, une proximité directe au tram peut se traduire par des nuisances principalement sonores (bruit, travaux, circulation).
 
 Malgré tout, l'hypothèse reste tout de même une hausse des prix au mètre carré dans le secteur proche du tram.
 
@@ -39,7 +39,7 @@ library(kableExtra)
 
 Les données des valeurs foncières proviennent de DVF+, elles contiennent les informations suivantes : transactions immobilières géoréférencées, prix, surface, pièces, type de bien, terrain.
 
-Les données sur les arrêts du tram proviennent elles de Open Data Bordeaux Métropole. Elles contiennent notamment les stations de tram géolocalisées.
+Les données sur les arrêts du tram proviennent, elles, de Open Data Bordeaux Métropole. Elles contiennent notamment les stations de tram géolocalisées.
 
 ```{r}
 # chemin des données
@@ -89,7 +89,7 @@ dvf_points <- dvf_bordeaux |>
   mutate(geometry = st_point_on_surface(geom))
 ```
 
-Nettoyage des données pour ne garder que les variables nécessaires à l'analyse.Nous gardons uniquement les biens ayant une surface supérieure à 20m² et un prix compris entre 500 et 15000€/m² pour écarter de potentielles observations aberrantes.
+Nettoyage des données pour ne garder que les variables nécessaires à l'analyse. Nous gardons uniquement les biens ayant une surface supérieure à 20m² et un prix compris entre 500 et 15 000 €/m² pour écarter de potentielles observations aberrantes.
 
 
 # 2. VARIABLE SPATIALE : DISTANCE À LA LIGNE D
@@ -117,7 +117,7 @@ dvf_points$dist_ligne_d <- apply(matrice_dist, 1, min)
 ```
 
 Création de la variable de distance. Elle calcule la distance entre les logements et les arrêts de tram. 
-Le dataframe stations_ligne_d contient uniquement les arrêts qui sont sur la ligne D, c'est sur cette partie de la ligne que se penchera notre analyse. Nous excluons la partie commune avec la ligne C qui existe depuis 2004. 
+Le dataframe stations_ligne_d contient uniquement les arrêts qui sont sur la ligne D; c'est sur cette partie de la ligne que se penchera notre analyse. Nous excluons la partie commune avec la ligne C qui existe depuis 2004. 
 
 
 # 2.bis. STATISTIQUES DESCRIPTIVES
@@ -156,16 +156,16 @@ table(cut(desc$dist_ligne_d, breaks = c(0, 500, 1000, Inf),
 ```
 
 L'échantillon contient 68 670 observations. 
-La majorité des logements ont un prix au m² compris entre 2500 et 5000€, d'après l'histogramme. 
-Pour la surface, on remarque que la moyenne est plus élevée que la médiane et que la valeur maximale est de 750m², on en déduit que certaines observations tirent la moyenne vers le haut. 
-Dans notre échantillon, on triuve plsu d'appartements que de maisons.
+La majorité des logements ont un prix au m² compris entre 2 500 et 5 000€, d'après l'histogramme. 
+Pour la surface, on remarque que la moyenne est plus élevée que la médiane et que la valeur maximale est de 750m²; on en déduit que certaines observations tirent la moyenne vers le haut. 
+Dans notre échantillon, on trouve plus d'appartements que de maisons.
 La majorité des logements ont une distance à la station la plus proche inférieure à trois kilomètres. 
 
-Globalement, le nombre de vente par années est stable.
+Globalement, le nombre de ventes par années est stable.
 
-On peut voir que la commune de Bordeaux(33063) concentre, elle, environ 81% des ventes de notre échantillon.
+On peut voir que la commune de Bordeaux (33063) concentre, elle, environ 81% des ventes de notre échantillon.
 
-On compte 9903 logements dans le zone traitée, 47517 dans le groupe de contrôle et 11250 dans la zone tampon.
+On compte 9 903 logements dans le zone traitée, 47 517 dans le groupe de contrôle et 11 250 dans la zone tampon.
 
 Moyenne du prix de vente avant / après : 
 ```{r}
@@ -177,7 +177,7 @@ dvf_points |>
   summarise(n = n(), prix_moyen = mean(prix))
 ```
 
-Le prix de vente moyen passe de 277563, avant ouverture à 341560, après ouverture de la ligne.
+Le prix de vente moyen passe de 277 563, avant ouverture à 341 560, après ouverture de la ligne.
 
 # 3. CARTE INTERACTIVE (`mapview`)
 
@@ -203,9 +203,9 @@ mapview(carte_pts, zcol = "groupe", col.regions = c("grey55", "#8B1E2D"),
   mapview(stations_ligne_d, col.regions = "black", cex = 5, layer.name = "Stations Ligne D")
 ```
 
-Cette carte sert à illustrer notre raisonnement sur le premier modèle que l'on va estimer. Ici le groupe traité (en bordeaux) regroupe tous les logements à moins de 500m de la ligne de tram D, le groupe contrôle (en gris) regroupe tous les logements à plus de 1000m de la ligne de tram D.
+Cette carte sert à illustrer notre raisonnement sur le premier modèle que l'on va estimer. Ici le groupe traité (en bordeaux) regroupe tous les logements à moins de 500m de la ligne de tram D; le groupe contrôle (en gris) regroupe tous les logements à plus de 1 000m de la ligne de tram D.
 
-Elle représente la localisation des logements qui sont dans le groupe traité et ceux qui sont dans le groupe contrôle. Pour une question de lisibilité les points sont superposés de manière aléatoire avec le set.seed(1).
+Elle représente la localisation des logements qui sont dans le groupe traité et ceux qui sont dans le groupe contrôle. Pour une question de lisibilité, les points sont superposés de manière aléatoire avec le set.seed(1).
 
 # 4. CARTES STATIQUES QUALITATIVES (`ggplot2`)
 
@@ -255,13 +255,16 @@ carte_prix_osm <- ggplot() +
 print(carte_prix_osm)
 ```
 
-Ces deux cartes montrent le prix des logements avant et après l'ouverture de la ligne de tram D peu importe le groupe (traité ou contrôle) et peu importe l'année de vente.
+Ces deux cartes montrent le prix des logements avant et après l'ouverture de la ligne de tram D, peu importe le groupe (traité ou contrôle) et peu importe l'année de vente.
 
 Ces deux cartes servent à appuyer l'analyse descriptive. Elles illustrent une tendance à la hausse des prix des logements comme vu lors de l'analyse descriptive (prix moyen plus élevé après l'ouverture de la ligne). En effet, on peut voir plus de points foncés sur la 2e carte (après ouverture de la ligne).
 
-Cependant, cette augmentation des prix n'est pas forcément liée à l'ouverture de la ligne. Cela peut être due à : - l'inflation - attractivité de la ville de Bordeaux après covid - d'autres projets urbains indépendant de la ligne de tram D
+Cependant, cette augmentation des prix n'est pas forcément liée à l'ouverture de la ligne. Cela peut être dû à : 
+- l'inflation 
+- attractivité de la ville de Bordeaux après covid 
+- d'autres projets urbains indépendant de la ligne de tram D.
 
-D'où l’intérêt de faire un modèle de différence en différence.
+D'où l’intérêt de faire un modèle de différence en différences.
 
 # 5. ANALYSE ÉCONOMÉTRIQUE (DOUBLE DIFFÉRENCE)
 
@@ -269,9 +272,11 @@ Equation du modèle :
 
 $$
 \ln(\text{Prix/m}^2_{i,t}) = \beta_0 + \beta_1 \,\text{Traité}_i + \beta_2 \,(\text{Traité}_i \times \text{Post}_t) + \gamma' X_i + \delta_{\text{quartier}} + \lambda_{\text{année} \times \text{mois}} + \varepsilon_{i,t}
-$$ Y est le logarithme du prix au m². Traité vaut 1 à moins de 500 m d'une station de la ligne D et 0 à plus de 1000 m. Post vaut 1 pour les ventes après le 29 février 2020 (la transition de décembre 2019 à février 2020 est exclue, car la ligne ouvre en deux temps). X regroupe le log de la surface, le nombre de pièces, une indicatrice maison et la surface de terrain. Le coefficient d'intérêt est β₂.
+$$ 
 
-La distance est calculée entre le point représentatif de la parcelle et la station de la ligne D la plus proche (en Lambert 93). Les effets fixes « quartier » (commune × section cadastrale) contrôlent les caractéristiques propres à chaque quartier qui ne varient pas dans le temps. Les effets fixes année × mois captent les chocs communs (taux, inflation, COVID). Signes attendus : β₂ \> 0 si l'accessibilité est valorisée. Il peut être nul ou négatif très près des rails (bruit, travaux), d'où le test à 300 m. La surface a un coefficient négatif, car le prix au m² baisse avec la taille du bien. Les maisons et le terrain ont des coefficients positifs.
+Y est le logarithme du prix au m². Traité vaut 1 à moins de 500 m d'une station de la ligne D et 0 à plus de 1000 m. Post vaut 1 pour les ventes après le 29 février 2020 (la transition de décembre 2019 à février 2020 est exclue, car la ligne ouvre en deux temps). X regroupe le log de la surface, le nombre de pièces, une indicatrice maison et la surface de terrain. Le coefficient d'intérêt est β₂.
+
+La distance est calculée entre le point représentatif de la parcelle et la station de la ligne D la plus proche (en Lambert 93). Les effets fixes « quartier » (commune × section cadastrale) contrôlent les caractéristiques propres à chaque quartier qui ne varient pas dans le temps. Les effets fixes année × mois captent les chocs communs (taux, inflation, COVID). Signes attendus : β₂ > 0 si l'accessibilité est valorisée. Il peut être nul ou négatif très près des rails (bruit, travaux), d'où le test à 300 m. La surface a un coefficient négatif, car le prix au m² baisse avec la taille du bien. Les maisons et le terrain ont des coefficients positifs.
 
 Variables de contrôle : si les logements proches des stations diffèrent par leur taille ou leur type, et que ces caractéristiques influencent le prix au m², les omettre biaiserait β₂. Elles ne changent le résultat que si elles sont corrélées à la fois au traitement et au prix.
 
@@ -362,13 +367,25 @@ modelsummary::modelsummary(
 
 ## Modèle de référence (modèle 500)
 
-Le modèle de différences en différences ne montre aucune significativité (Effet Tram (DiD binaire)). Bien que l'ouverture d'une ligne de tram n'ait pas d'effet significatif sur le prix des logements, d'autres facteurs peuvent l'influencer : - traité : à l'intérieur d'un même quartier, un logement à moins de 500m du tram était vendu 6,9% ($100 \times (e^{-0{,}0720} - 1)$) moins cher avant l'arrivée du tram. - Log(Surface) : une augmentation de 1% de la surface du logement entraine une diminution de 0,21% du prix au m². - Nombre de pièces : l'ajout d'une pièce au sein du logement augmente le prix au m² d'environ 1,83% ($100 \times (e^{0{,}0181} - 1)$). - Maison : une maison se vend en moyenne 6,78% plus cher au m² qu'un appartement ($100 \times (e^{0{,}0656} - 1)$). - asinh(Terrain) : plus le terrain est grand plus le prix au m² est élevé. Une augmentation de 1% du terrain augmente de 0,04% le prix au m² du logement, pour les logements ayant un terrain. (Toutes les interprétations sont faites à caractéristiques égales, en dehors de la variable observée)
+Le modèle de différences en différences ne montre aucune significativité (Effet Tram (DiD binaire)). Bien que l'ouverture d'une ligne de tram n'ait pas d'effet significatif sur le prix des logements, d'autres facteurs peuvent l'influencer : 
+
+- traité : à l'intérieur d'un même quartier, un logement à moins de 500m du tram était vendu 6,9% ($100 \times (e^{-0{,}0720} - 1)$) moins cher avant l'arrivée du tram. 
+
+- Log(Surface) : une augmentation de 1% de la surface du logement entraîne une diminution de 0,21% du prix au m². 
+
+- Nombre de pièces : l'ajout d'une pièce au sein du logement augmente le prix au m² d'environ 1,83% ($100 \times (e^{0{,}0181} - 1)$). 
+
+- Maison : une maison se vend en moyenne 6,78% plus cher au m² qu'un appartement ($100 \times (e^{0{,}0656} - 1)$). 
+
+- asinh(Terrain) : plus le terrain est grand plus le prix au m² est élevé. Une augmentation de 1% du terrain augmente de 0,04% le prix au m² du logement, pour les logements ayant un terrain.
+
+(Toutes les interprétations sont faites à caractéristiques égales, en dehors de la variable observée).
 
 ## Tests de robustesse (seuils à 300 m, 750 m et modèle continu)
 
 Afin de vérifier que nos résultats ne dépendent pas du choix arbitraire du rayon de 500 mètres, nous estimons trois spécifications complémentaires :
 
-Proximité immédiate (\< 300 m vs \> 1 000 m) : L'effet de l'ouverture du tramway (Effet Tram (DiD Binaire)) reste statistiquement non significatif (le coefficient passe à 0,0169, soit environ +1,7%, mais n'est pas significativement différent de zéro). En revanche, l'écart initial avant traitement (traite) s'accentue : au sein d'un même quartier, les logements situés à moins de 300 mètres du tracé se vendaient environ 24,0 % moins cher au m² ($100 \times (e^{-0{,}2749} - 1)$) avant l'arrivée du tramway, ce qui peut s'expliquer par une exposition plus directe aux nuisances des grands axes routiers.
+Proximité immédiate (< 300 m vs > 1 000 m) : L'effet de l'ouverture du tramway (Effet Tram (DiD Binaire)) reste statistiquement non significatif (le coefficient passe à 0,0169, soit environ +1,7%, mais n'est pas significativement différent de zéro). En revanche, l'écart initial avant traitement (traite) s'accentue : au sein d'un même quartier, les logements situés à moins de 300 mètres du tracé se vendaient environ 24,0 % moins cher au m² ($100 \times (e^{-0{,}2749} - 1)$) avant l'arrivée du tramway, ce qui peut s'expliquer par une exposition plus directe aux nuisances des grands axes routiers.
 
 Périmètre élargi (\< 750 m vs \> 1 000 m) : Là encore, l'effet du tramway après mise en service reste non significatif (-0,0084), et la différence initiale entre zones disparaît (0,0014, non significatif).
 
@@ -413,7 +430,7 @@ abline(v = 2019.9, lty = 2, col = "red")
 
 ```
 
-Pour vérifier la qualité du groupe de contrôle, on vérifie graphiquement l'hypothèse des tendances parallèles. Le premier graphique représente l'évolution du prix moyen au m² avant et après l'ouverture de la ligne D, pour les deux groupes. On remarque que les deux groupes évoluent de manière similaire (même sens, même pente). Ce qui nous conforte dans l'utilisation du modèle précédent, le DiD. Afin d'appuyer cette analyse, nous avons réalisé un event study. Ce dernier confirme l'interprétation du modèle de référence.
+Pour vérifier la qualité du groupe de contrôle, on vérifie graphiquement l'hypothèse des tendances parallèles. Le premier graphique représente l'évolution du prix moyen au m² avant et après l'ouverture de la ligne D, pour les deux groupes. On remarque que les deux groupes évoluent de manière similaire (même sens, même pente). Cela nous conforte dans l'utilisation du modèle précédent, le DiD. Afin d'appuyer cette analyse, nous avons réalisé un event study. Ce dernier confirme l'interprétation du modèle de référence.
 
 ```{r}
 # Vérification rapide des tendances parallèles pour < 300 m
@@ -450,7 +467,7 @@ abline(v = 2019.9, lty = 2, col = "red")
 
 ```
 
-Pour valider nos tests de robustesse, nous avons vérifier l'hypothèse des tendances parallèles sur le modèle rapproché. Cette dernière est confirmée, par l'event study, bien que le graphique montre une évolution un peu moins similaire des deux groupes comparé au graphique du modèle de référence.
+Pour valider nos tests de robustesse, nous avons vérifié l'hypothèse des tendances parallèles sur le modèle rapproché. Cette dernière est confirmée par l'event study, bien que le graphique montre une évolution un peu moins similaire des deux groupes comparé au graphique du modèle de référence.
 
 # CONCLUSION
 
@@ -460,7 +477,7 @@ Quatre raisons principales expliquent ce résultat :
 
 -   L'anticipation du marché : les gains d'accessibilité ont probablement été intégrés dans les prix dès l'annonce du projet ou pendant les travaux, avant l'inauguration.
 
--   Le choc du COVID-19 : l'ouverture fin 2019 – début 2020 coïncide avec les confinements et l'essor du télétravail, qui ont temporairement réduit l'attrait des transports en commun.De plus, une des conséquences de ce choc est la volonté des français de quitter la capitale pour des métropole comme Bordeaux.
+-   Le choc du COVID-19 : l'ouverture fin 2019 – début 2020 coïncide avec les confinements et l'essor du télétravail, qui ont temporairement réduit l'attrait des transports en commun. De plus, une des conséquences de ce choc est la volonté des Français de quitter la capitale pour des métropoles comme Bordeaux.
 
 -   La compensation des effets : la meilleure desserte du centre-ville a pu être contrebalancée par les nuisances de proximité directe (bruit, trafic).
 
