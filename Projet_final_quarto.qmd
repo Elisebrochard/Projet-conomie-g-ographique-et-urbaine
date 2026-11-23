@@ -91,6 +91,7 @@ dvf_points <- dvf_bordeaux |>
 
 Nettoyage des données pour ne garder que les variables nécessaires à l'analyse.Nous gardons uniquement les biens ayant une surface supérieure à 20m² et un prix compris entre 500 et 15000€/m² pour écarter de potentielles observations aberrantes.
 
+
 # 2. VARIABLE SPATIALE : DISTANCE À LA LIGNE D
 
 ```{r}
@@ -115,7 +116,9 @@ matrice_dist <- st_distance(dvf_points, stations_ligne_d)
 dvf_points$dist_ligne_d <- apply(matrice_dist, 1, min)
 ```
 
-Création de la variable de distance. Elle calcule la distance entre les logements et les arrêts de tram. Le dataframe stations_ligne_d contient uniquement les arrêts qui sont sur la ligne D, c'est sur cette partie de la ligne que se penchera notre analyse. Nous excluons la partie commune avec la ligne C qui existe depuis 2004.
+Création de la variable de distance. Elle calcule la distance entre les logements et les arrêts de tram. 
+Le dataframe stations_ligne_d contient uniquement les arrêts qui sont sur la ligne D, c'est sur cette partie de la ligne que se penchera notre analyse. Nous excluons la partie commune avec la ligne C qui existe depuis 2004. 
+
 
 # 2.bis. STATISTIQUES DESCRIPTIVES
 
@@ -152,7 +155,11 @@ table(cut(desc$dist_ligne_d, breaks = c(0, 500, 1000, Inf),
           right = FALSE))
 ```
 
-L'échantillon contient 68 670 observations. La majorité des logements ont un prix au m² compris entre 2500 et 5000€, d'après l'histogramme. Pour la surface, on remarque que la moyenne est plus élevée que la médiane et que la valeur maximale est de 750m², on en déduit que certaines observations tirent la moyenne vers le haut. Dans notre échantillon, on triuve plsu d'appartements que de maisons. La majorité des logements ont une distance à la station la plus proche inférieure à trois kilomètres.
+L'échantillon contient 68 670 observations. 
+La majorité des logements ont un prix au m² compris entre 2500 et 5000€, d'après l'histogramme. 
+Pour la surface, on remarque que la moyenne est plus élevée que la médiane et que la valeur maximale est de 750m², on en déduit que certaines observations tirent la moyenne vers le haut. 
+Dans notre échantillon, on triuve plsu d'appartements que de maisons.
+La majorité des logements ont une distance à la station la plus proche inférieure à trois kilomètres. 
 
 Globalement, le nombre de vente par années est stable.
 
@@ -160,8 +167,7 @@ On peut voir que la commune de Bordeaux(33063) concentre, elle, environ 81% des 
 
 On compte 9903 logements dans le zone traitée, 47517 dans le groupe de contrôle et 11250 dans la zone tampon.
 
-Moyenne du prix de vente avant / après :
-
+Moyenne du prix de vente avant / après : 
 ```{r}
 dvf_points |> 
   st_drop_geometry() |> 
