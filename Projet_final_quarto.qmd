@@ -10,14 +10,13 @@ editor: visual
 
 Pour ce projet en économie géographique et urbaine, nous avons choisi d'étudier l'impact de la création d'une ligne de transports en commun sur les prix de l'immobilier.
 
-Afin de mener ce projet, nous avons décidé de nous pencher sur le cas de la ville de Bordeaux, dans laquelle une nouvelle ligne de tram a été mise en service à la fin de l'année 2019. L'idée générale est de comparer les prix de vente des logements dans les communes traversées par cette ligne de tramway. Pour cela, nous allons utiliser la méthode de différence en différence en séparant un groupe traité et un groupe de contrôle, le groupe traité étant le groupe des logements les plus proches du tram.
-La ligne traverse quatre communes qui font donc parti de notre analyse : Bordeaux, Le Bouscat, Bruges, Eysines.
+Afin de mener ce projet, nous avons décidé de nous pencher sur le cas de la ville de Bordeaux, dans laquelle une nouvelle ligne de tram a été mise en service à la fin de l'année 2019. L'idée générale est de comparer les prix de vente des logements dans les communes traversées par cette ligne de tramway. Pour cela, nous allons utiliser la méthode de différence en différence en séparant un groupe traité et un groupe de contrôle, le groupe traité étant le groupe des logements les plus proches du tram. La ligne traverse quatre communes qui font donc parti de notre analyse : Bordeaux, Le Bouscat, Bruges, Eysines.
 
 Avant de lancer l'étude économétrique, on peut s'interroger sur les effets attendus.
 
 Dans un premier temps, la mise en service d'une nouvelle ligne de tram permet de rendre les déplacements plus accessibles jusqu'au centre-ville. On s'attend à ce que cette accessibilité entraîne une augmentation des prix aux alentours proches de la ligne. Cependant, on peut également s'attendre à des externalités négatives : en effet, une proximité directe au tram peut se traduire par des nuisances sonores principalement (bruit, travaux, circulation).
 
-Malgré tout, l'hypothèse reste tout de même une hausse des prix au mètre carré dans le secteur proche du tram. 
+Malgré tout, l'hypothèse reste tout de même une hausse des prix au mètre carré dans le secteur proche du tram.
 
 # Chargement des packages
 
@@ -89,7 +88,7 @@ dvf_points <- dvf_bordeaux |>
   mutate(geometry = st_point_on_surface(geom))
 ```
 
-Nettoyage des données pour ne garder que les variables nécessaires à l'analyse. 
+Nettoyage des données pour ne garder que les variables nécessaires à l'analyse.
 
 # 2. VARIABLE SPATIALE : DISTANCE À LA LIGNE D
 
@@ -115,8 +114,7 @@ matrice_dist <- st_distance(dvf_points, stations_ligne_d)
 dvf_points$dist_ligne_d <- apply(matrice_dist, 1, min)
 ```
 
-Création de la variable de distances. Elle calcule la distance entre les logements et les arrêts de tram. 
-Le dataframe stations_ligne_d contient uniquement les arrêts qui sont sur la ligne D, c'est sur cette partie de la ligne que se penchera notre analyse. Nous excluons la partie commune avec la ligne C qui existe depuis 2004. 
+Création de la variable de distances. Elle calcule la distance entre les logements et les arrêts de tram. Le dataframe stations_ligne_d contient uniquement les arrêts qui sont sur la ligne D, c'est sur cette partie de la ligne que se penchera notre analyse. Nous excluons la partie commune avec la ligne C qui existe depuis 2004.
 
 # 2.bis. STATISTIQUES DESCRIPTIVES
 
@@ -153,7 +151,8 @@ table(cut(desc$dist_ligne_d, breaks = c(0, 500, 1000, Inf),
           right = FALSE))
 ```
 
-Moyenne du prix de vente avant / après : 
+Moyenne du prix de vente avant / après :
+
 ```{r}
 dvf_points |> 
   st_drop_geometry() |> 
@@ -187,7 +186,7 @@ mapview(carte_pts, zcol = "groupe", col.regions = c("grey55", "#8B1E2D"),
   mapview(stations_ligne_d, col.regions = "black", cex = 5, layer.name = "Stations Ligne D")
 ```
 
-Cette carte sert à illustrer notre raisonnement sur le premier modèle que l'on va estimer. Ici le groupe traité (en bordeaux) regroupe tous les logements à moins de 500m de la ligne de tram D, le groupe contrôle (en gris) regroupe tous les logements à plus de 1000m de la ligne de tram D. 
+Cette carte sert à illustrer notre raisonnement sur le premier modèle que l'on va estimer. Ici le groupe traité (en bordeaux) regroupe tous les logements à moins de 500m de la ligne de tram D, le groupe contrôle (en gris) regroupe tous les logements à plus de 1000m de la ligne de tram D.
 
 Elle représente la localisation des logements qui sont dans le groupe traité et ceux qui sont dans le groupe contrôle. Pour une question de lisibilité seulement 1/3 (choisi aléatoirement : set.seed(1)) des logements du groupe traité sont représenté sur cette carte.
 
@@ -239,14 +238,11 @@ carte_prix_osm <- ggplot() +
 print(carte_prix_osm)
 ```
 
-Ces deux cartes montrent le prix des logements avant et après l'ouverture de la ligne de tram D peu importe le groupe (traité ou contrôle) et peu importe l'année de vente. 
+Ces deux cartes montrent le prix des logements avant et après l'ouverture de la ligne de tram D peu importe le groupe (traité ou contrôle) et peu importe l'année de vente.
 
-Ces deux cartes servent à appuyer l'analyse descriptive. Elles illustrent une tendance à la hausse des prix des logements comme vu lors de l'analyse descriptive (prix moyen plus élevé après l'ouverture de la ligne). En effet, on peut voir plus de points foncés sur la 2e carte (après ouverture de la ligne).  
+Ces deux cartes servent à appuyer l'analyse descriptive. Elles illustrent une tendance à la hausse des prix des logements comme vu lors de l'analyse descriptive (prix moyen plus élevé après l'ouverture de la ligne). En effet, on peut voir plus de points foncés sur la 2e carte (après ouverture de la ligne).
 
-Cependant, cette augmentation des prix n'est pas forcément liée à l'ouverture de la ligne. Cela peut être due à :
-- l'inflation
-- attractivité de la ville de Bordeaux après covid
-- d'autres projets urbains indépendant de la ligne de tram D
+Cependant, cette augmentation des prix n'est pas forcément liée à l'ouverture de la ligne. Cela peut être due à : - l'inflation - attractivité de la ville de Bordeaux après covid - d'autres projets urbains indépendant de la ligne de tram D
 
 D'où l’intérêt de faire un modèle de différence en différence.
 
