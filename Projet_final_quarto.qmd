@@ -456,7 +456,7 @@ Pour valider nos tests de robustesse, nous avons vérifier l'hypothèse des tend
 
 Contrairement à notre hypothèse initiale, nos estimations en doubles différences montrent que la mise en service de la ligne D du tramway bordelais n'a pas entraîné de hausse significative des prix immobiliers au m² à proximité des stations (quel que soit le rayon retenu).
 
-Trois raisons principales expliquent ce résultat :
+Quatre raisons principales expliquent ce résultat :
 
 -   L'anticipation du marché : les gains d'accessibilité ont probablement été intégrés dans les prix dès l'annonce du projet ou pendant les travaux, avant l'inauguration.
 
